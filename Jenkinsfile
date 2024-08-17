@@ -1,33 +1,64 @@
 pipeline {
     agent any
-    
     parameters {
-        string(name: 'HOST_IP', defaultValue: '', description: 'Remote host IP address')
-        choice(name: 'HOST_TYPE', choices: ['server', 'desktop', 'laptop'], description: 'Type of remote host')
-        string(name: 'USERNAME', defaultValue: '', description: 'Username to create')
-        password(name: 'PASSWORD', defaultValue: '', description: 'Password for the user')
-        string(name: 'SSH_KEY', defaultValue: '', description: 'Golden SSH key for future remote connections')
-        string(name: 'PACKAGES', defaultValue: '', description: 'Comma-separated list of packages to install')
-        text(name: 'CONFIG_FILES', defaultValue: '', description: 'Dedicated config files as JSON or other formats')
+        choice(name: 'host', choices: ['worker1', 'worker2'], description: 'Choose the host to configure')
+        booleanParam(name: 'install_wget', defaultValue: true, description: 'Install wget')
+        booleanParam(name: 'install_top', defaultValue: true, description: 'Install top')
     }
-    
     stages {
-        stage('Prepare Environment') {
+        stage('Prepare Ansible') {
             steps {
                 script {
-                    env.PACKAGES_LIST = params.PACKAGES.split(',')
+                    writeFile file: 'inventory', text: "[remote]\n${params.host} ansible_user=jenkins ansible_password=jenkins"
                 }
             }
         }
-        
-        stage('Ansible Setup') {
+        stage('Verify Inventory') {
+            steps {
+                script {
+                    sh 'cat inventory'
+                }
+            }
+        }
+
+        stage('Install Packages') {
+            when {
+                anyOf {
+                    expression { return params.install_wget }
+                    expression { return params.install_top }
+                }
+            }
+            steps {
+                script {
+                    def packages = []
+                    if (params.install_wget) {
+                        packages.add('wget')
+                    }
+                    if (params.install_top) {
+                        packages.add('top')
+                    }
+                    ansiblePlaybook(
+                        playbook: 'tasks/install_packages.yml',
+                        inventory: 'inventory',
+                        extraVars: [
+                            packages: "${packages.join(',')}"
+                        ]
+                    )
+                }
+            }
+        }
+        stage('Apply Configuration') {
             steps {
                 ansiblePlaybook(
-                    playbook: 'playbooks/setup-host.yml',
-                    inventory: 'localhost,',
-                    extras: '-e "host_ip=${params.HOST_IP} username=${params.USERNAME} password=${params.PASSWORD} ssh_key=${params.SSH_KEY} packages=${env.PACKAGES_LIST} config_files=${params.CONFIG_FILES}"'
+                    playbook: 'apply_config.yml',
+                    inventory: 'inventory'
                 )
             }
+        }
+    }
+    post {
+        always {
+            cleanWs()
         }
     }
 }

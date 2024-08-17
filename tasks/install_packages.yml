@@ -1,0 +1,52 @@
+---
+- name: Install packages based on OS
+  hosts: remote
+  become: true
+  tasks:
+    - name: Ensure user exists
+      user:
+        name: jenkins
+        password: jenkins
+        state: present
+
+    - name: Detect OS
+      shell: |
+        lsb_release -i | awk -F: '{print $2}' | xargs
+      register: os_name
+      changed_when: false
+
+    - name: Install packages on Debian-based systems
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages_debian }}"
+      when: "'Debian' in os_name.stdout or 'Ubuntu' in os_name.stdout"
+      become: true
+      vars:
+        packages_debian:
+          - "{{ 'wget' if 'wget' in packages else '' }}"
+          - "{{ 'procps' if 'top' in packages else '' }}"
+
+    - name: Install packages on RedHat-based systems
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages_redhat }}"
+      when: "'CentOS' in os_name.stdout or 'RedHat' in os_name.stdout"
+      become: true
+      vars:
+        packages_redhat:
+          - "{{ 'wget' if 'wget' in packages else '' }}"
+          - "{{ 'procps-ng' if 'top' in packages else '' }}"
+
+    - name: Install packages on Alpine systems
+      apk:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages_alpine }}"
+      when: "'Alpine' in os_name.stdout"
+      become: true
+      vars:
+        packages_alpine:
+          - "{{ 'wget' if 'wget' in packages else '' }}"
+          - "{{ 'procps' if 'top' in packages else '' }}"
