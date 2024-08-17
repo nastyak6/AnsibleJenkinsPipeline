@@ -17,10 +17,10 @@
       copy:
         src: files/curlrc
         dest: ~/.curlrc
-      when: "{{ install_curl }}"
+      when: install_curl
 
     - name: Copy htop configuration
       copy:
         src: files/htoprc
         dest: ~/.config/htop/htoprc
-      when: "{{ install_htop }}"
+      when: install_htop
