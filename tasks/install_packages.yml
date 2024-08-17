@@ -1,21 +1,51 @@
 ---
-- name: Ensure required packages are installed
+- name: Install packages based on OS
   hosts: remote
   become: true
   tasks:
-    - name: Remove conflicting packages
-      package:
-        name: curl-minimal
-        state: absent
-
-    - name: Install wget
-      package:
-        name: wget
+    - name: Ensure user exists
+      user:
+        name: jenkins
+        password: jenkins
         state: present
-      when: "'wget' in packages"
 
-    - name: Install procps-ng (provides top)
-      package:
-        name: procps-ng
+    - name: Detect OS
+      command: lsb_release -i | awk -F: '{print $2}' | xargs
+      register: os_name
+      changed_when: false
+
+    - name: Install packages on Debian-based systems
+      when: "'Debian' in os_name.stdout or 'Ubuntu' in os_name.stdout"
+      apt:
+        name: "{{ item }}"
         state: present
-      when: "'top' in packages"
+      loop: "{{ packages }}"
+      vars:
+        packages:
+          - "{{ 'wget' if 'wget' in packages else '' }}"
+          - "{{ 'procps' if 'top' in packages else '' }}"
+      become: true
+
+    - name: Install packages on RedHat-based systems
+      when: "'CentOS' in os_name.stdout or 'RedHat' in os_name.stdout"
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+      vars:
+        packages:
+          - "{{ 'wget' if 'wget' in packages else '' }}"
+          - "{{ 'procps-ng' if 'top' in packages else '' }}"
+      become: true
+
+    - name: Install packages on Alpine systems
+      when: "'Alpine' in os_name.stdout"
+      apk:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+      vars:
+        packages:
+          - "{{ 'wget' if 'wget' in packages else '' }}"
+          - "{{ 'procps' if 'top' in packages else '' }}"
+      become: true
