@@ -1,42 +1,49 @@
 pipeline {
     agent any
     parameters {
-        choice(name: 'selected_host', choices: ['node1', 'node2', 'node3', 'node4', 'node_app'], description: 'Select the Host')
+        choice(name: 'host_choice', choices: ['node1', 'node2', 'node3', 'node4'], description: 'Choose the remote host')
+        booleanParam(name: 'install_packages', defaultValue: true, description: 'Install curl and htop')
     }
     stages {
         stage('Prepare Ansible') {
             steps {
                 script {
-                    // Use the selected host's credentials from hosts.ini
-                    def hostInfo = readFile('hosts.ini').readLines().findAll { it.startsWith("${params.selected_host} ") }
-                    def ansible_user = hostInfo.find { it.contains('ansible_user=') }?.split('=')[1]?.trim()
-                    def ansible_password = hostInfo.find { it.contains('ansible_password=') }?.split('=')[1]?.trim()
+                    // Extract the host information from hosts.ini
+                    def hostInfo = readFile('hosts.ini').split('\n').find { it.contains(params.host_choice) }
+                    def username = hostInfo.split(' ')[1].split('=')[1]
+                    def password = hostInfo.split(' ')[2].split('=')[1]
 
-                    // Create Ansible inventory file for the selected host
-                    writeFile file: 'inventory', text: """
-                    [selected_host]
-                    ${params.selected_host} ansible_user=${ansible_user} ansible_password=${ansible_password} ansible_ssh_private_key_file=./id_rsa
-                    """
+                    // Create Ansible inventory file
+                    writeFile file: 'inventory', text: "[remote]\n${params.host_choice} ansible_user=${username} ansible_password=${password}"
                 }
             }
         }
-        stage('Install Packages and Configurations') {
+        stage('Run Ansible Playbook') {
             steps {
                 script {
-                    // Define the general packages and configuration files
-                    def packages = "package1,package2"
-                    def config_files = "/path/to/config1,/path/to/config2"
-
-                    // Run Ansible Playbook to install packages and configure files
-                    ansiblePlaybook(
-                        playbook: 'playbook.yml',
-                        inventory: 'inventory',
-                        extraVars: [
-                            selected_host: "${params.selected_host}",
-                            packages: packages,
-                            config_files: config_files
-                        ]
-                    )
+                    if (params.install_packages) {
+                        def packages = "curl,htop"
+                        ansiblePlaybook(
+                            playbook: 'playbook.yml',
+                            inventory: 'inventory',
+                            extraVars: [
+                                host_ip: "${params.host_choice}",
+                                username: "${username}",
+                                password: "${password}",
+                                packages: "${packages}"
+                            ]
+                        )
+                    } else {
+                        ansiblePlaybook(
+                            playbook: 'playbook.yml',
+                            inventory: 'inventory',
+                            extraVars: [
+                                host_ip: "${params.host_choice}",
+                                username: "${username}",
+                                password: "${password}"
+                            ]
+                        )
+                    }
                 }
             }
         }
