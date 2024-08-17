@@ -31,7 +31,7 @@ pipeline {
                         packages.add('htop')
                     }
                     ansiblePlaybook(
-                        playbook: 'install_packages.yml',
+                        playbook: 'tasks/playbook.yml',
                         inventory: 'inventory',
                         extraVars: [
                             packages: "${packages.join(',')}"
