@@ -1,0 +1,20 @@
+---
+- hosts: remote
+  become: yes
+  tasks:
+    - name: Ensure user exists
+      user:
+        name: "{{ username }}"
+        password: "{{ password | password_hash('sha512') }}"
+        state: present
+
+    - name: Install required packages
+      apt:
+        name: "{{ packages.split(',') }}"
+        state: present
+
+    - name: Deploy configuration files
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/{{ item | basename }}"
+      with_items: "{{ config_files.split(',') }}"
