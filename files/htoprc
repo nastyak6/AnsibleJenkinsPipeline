@@ -1,0 +1,4 @@
+# htop configuration file
+fields=0 48 17 18 38 39 2 46 47 49 50 31 1
+sort_key=46
+tree_sort_key=46
