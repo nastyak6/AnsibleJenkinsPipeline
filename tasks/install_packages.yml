@@ -1,16 +1,21 @@
 ---
-- name: Install specified packages
+- name: Ensure required packages are installed
   hosts: remote
   become: true
   tasks:
-    - name: Install curl
+    - name: Remove conflicting packages
       package:
-        name: curl
-        state: present
-      when: "'curl' in packages"
+        name: curl-minimal
+        state: absent
 
-    - name: Install htop
+    - name: Install wget
       package:
-        name: htop
+        name: wget
         state: present
-      when: "'htop' in packages"
+      when: "'wget' in packages"
+
+    - name: Install procps-ng (provides top)
+      package:
+        name: procps-ng
+        state: present
+      when: "'top' in packages"
