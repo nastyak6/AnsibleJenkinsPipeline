@@ -1,7 +1,11 @@
-- hosts: remote
+---
+- name: Install specified packages
+  hosts: remote
+  become: true
   tasks:
-    - name: Install specified packages
+    - name: Ensure required packages are installed
       package:
         name: "{{ item }}"
         state: present
-      with_items: "{{ packages.split(',') }}"
+      loop:
+        - "{{ packages }}"
