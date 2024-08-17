@@ -4,8 +4,8 @@
   tasks:
     - name: Ensure user exists
       user:
-        name: "jenkins"
-        password: "jenkins"
+        name: jenkins
+        password: jenkins
         state: present
 
     - name: Install required packages
