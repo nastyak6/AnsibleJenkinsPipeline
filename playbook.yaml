@@ -1,0 +1,37 @@
+---
+- name: Setup Remote Host
+  hosts: "{{ host_ip }}"
+  become: yes
+  
+  vars:
+    username: "{{ username }}"
+    password: "{{ password | password_hash('sha512') }}"
+    ssh_key: "{{ ssh_key }}"
+    packages: "{{ packages }}"
+    config_files: "{{ config_files | from_json }}"
+    
+  tasks:
+    - name: Ensure user exists
+      user:
+        name: "{{ username }}"
+        password: "{{ password }}"
+        shell: /bin/bash
+        createhome: yes
+        
+    - name: Add SSH key to the user
+      authorized_key:
+        user: "{{ username }}"
+        key: "{{ ssh_key }}"
+        state: present
+
+    - name: Install packages
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+        
+    - name: Deploy configuration files
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items: "{{ config_files }}"
