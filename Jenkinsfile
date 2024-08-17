@@ -10,7 +10,7 @@ pipeline {
             steps {
                 script {
                     // Create Ansible inventory file based on the selected host
-                    writeFile file: 'inventory', text: "[remote]\n${params.host} ansible_user=${params.host} ansible_password=${params.host}"
+                    writeFile file: 'inventory', text: "[remote]\n${params.host} ansible_user=${params.host} ansible_password=jenkins"
                 }
             }
         }
