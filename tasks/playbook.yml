@@ -4,8 +4,8 @@
   tasks:
     - name: Ensure user exists
       user:
-        name: "{{ username }}"
-        password: "{{ password | password_hash('sha512') }}"
+        name: "jenkins"
+        password: "jenkins"
         state: present
 
     - name: Install required packages
