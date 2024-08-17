@@ -10,42 +10,43 @@
         state: present
 
     - name: Detect OS
-      command: lsb_release -i | awk -F: '{print $2}' | xargs
+      shell: |
+        lsb_release -i | awk -F: '{print $2}' | xargs
       register: os_name
       changed_when: false
 
     - name: Install packages on Debian-based systems
-      when: "'Debian' in os_name.stdout or 'Ubuntu' in os_name.stdout"
       apt:
         name: "{{ item }}"
         state: present
-      loop: "{{ packages }}"
+      loop: "{{ packages_debian }}"
+      when: "'Debian' in os_name.stdout or 'Ubuntu' in os_name.stdout"
+      become: true
       vars:
-        packages:
+        packages_debian:
           - "{{ 'wget' if 'wget' in packages else '' }}"
           - "{{ 'procps' if 'top' in packages else '' }}"
-      become: true
 
     - name: Install packages on RedHat-based systems
-      when: "'CentOS' in os_name.stdout or 'RedHat' in os_name.stdout"
       yum:
         name: "{{ item }}"
         state: present
-      loop: "{{ packages }}"
+      loop: "{{ packages_redhat }}"
+      when: "'CentOS' in os_name.stdout or 'RedHat' in os_name.stdout"
+      become: true
       vars:
-        packages:
+        packages_redhat:
           - "{{ 'wget' if 'wget' in packages else '' }}"
           - "{{ 'procps-ng' if 'top' in packages else '' }}"
-      become: true
 
     - name: Install packages on Alpine systems
-      when: "'Alpine' in os_name.stdout"
       apk:
         name: "{{ item }}"
         state: present
-      loop: "{{ packages }}"
+      loop: "{{ packages_alpine }}"
+      when: "'Alpine' in os_name.stdout"
+      become: true
       vars:
-        packages:
+        packages_alpine:
           - "{{ 'wget' if 'wget' in packages else '' }}"
           - "{{ 'procps' if 'top' in packages else '' }}"
-      become: true
