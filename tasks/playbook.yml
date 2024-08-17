@@ -13,8 +13,14 @@
         name: "{{ packages.split(',') }}"
         state: present
 
-    - name: Deploy configuration files
+    - name: Copy curl configuration
       copy:
-        src: "{{ item }}"
-        dest: "/etc/{{ item | basename }}"
-      with_items: "{{ config_files.split(',') }}"
+        src: files/curlrc
+        dest: ~/.curlrc
+      when: install_curl
+
+    - name: Copy htop configuration
+      copy:
+        src: files/htoprc
+        dest: ~/.config/htop/htoprc
+      when: install_htop

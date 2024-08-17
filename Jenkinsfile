@@ -1,50 +1,51 @@
 pipeline {
     agent any
     parameters {
-        choice(name: 'host_choice', choices: ['node1', 'node2', 'node3', 'node4'], description: 'Choose the remote host')
-        booleanParam(name: 'install_packages', defaultValue: true, description: 'Install curl and htop')
+        choice(name: 'host', choices: ['node1', 'node2', 'node3', 'node4'], description: 'Choose the host to configure')
+        booleanParam(name: 'install_curl', defaultValue: true, description: 'Install curl')
+        booleanParam(name: 'install_htop', defaultValue: true, description: 'Install htop')
     }
     stages {
         stage('Prepare Ansible') {
             steps {
                 script {
-                    // Extract the host information from hosts.ini
-                    def hostInfo = readFile('hosts.ini').split('\n').find { it.contains(params.host_choice) }
-                    def username = hostInfo.split(' ')[1].split('=')[1]
-                    def password = hostInfo.split(' ')[2].split('=')[1]
-
-                    // Create Ansible inventory file
-                    writeFile file: 'inventory', text: "[remote]\n${params.host_choice} ansible_user=${username} ansible_password=${password}"
+                    // Create Ansible inventory file based on the selected host
+                    writeFile file: 'inventory', text: "[remote]\n${params.host} ansible_user=${params.host}_user ansible_password=${params.host}_password"
                 }
             }
         }
-        stage('Run Ansible Playbook') {
+        stage('Install Packages') {
+            when {
+                anyOf {
+                    expression { return params.install_curl }
+                    expression { return params.install_htop }
+                }
+            }
             steps {
                 script {
-                    if (params.install_packages) {
-                        def packages = "curl,htop"
-                        ansiblePlaybook(
-                            playbook: 'playbook.yml',
-                            inventory: 'inventory',
-                            extraVars: [
-                                host_ip: "${params.host_choice}",
-                                username: "${username}",
-                                password: "${password}",
-                                packages: "${packages}"
-                            ]
-                        )
-                    } else {
-                        ansiblePlaybook(
-                            playbook: 'playbook.yml',
-                            inventory: 'inventory',
-                            extraVars: [
-                                host_ip: "${params.host_choice}",
-                                username: "${username}",
-                                password: "${password}"
-                            ]
-                        )
+                    def packages = []
+                    if (params.install_curl) {
+                        packages.add('curl')
                     }
+                    if (params.install_htop) {
+                        packages.add('htop')
+                    }
+                    ansiblePlaybook(
+                        playbook: 'install_packages.yml',
+                        inventory: 'inventory',
+                        extraVars: [
+                            packages: "${packages.join(',')}"
+                        ]
+                    )
                 }
+            }
+        }
+        stage('Apply Configuration') {
+            steps {
+                ansiblePlaybook(
+                    playbook: 'apply_config.yml',
+                    inventory: 'inventory'
+                )
             }
         }
     }
