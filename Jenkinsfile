@@ -1,7 +1,7 @@
 pipeline {
     agent any
     parameters {
-        choice(name: 'host', choices: ['node1', 'node2', 'node3', 'node4'], description: 'Choose the host to configure')
+        choice(name: 'host', choices: ['worker1', 'worker2'], description: 'Choose the host to configure')
         booleanParam(name: 'install_curl', defaultValue: true, description: 'Install curl')
         booleanParam(name: 'install_htop', defaultValue: true, description: 'Install htop')
     }
