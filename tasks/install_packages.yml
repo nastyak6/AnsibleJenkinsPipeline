@@ -3,9 +3,14 @@
   hosts: remote
   become: true
   tasks:
-    - name: Ensure required packages are installed
+    - name: Install curl
       package:
-        name: "{{ item }}"
+        name: curl
         state: present
-      loop:
-        - "{{ packages }}"
+      when: "'curl' in packages"
+
+    - name: Install htop
+      package:
+        name: htop
+        state: present
+      when: "'htop' in packages"
