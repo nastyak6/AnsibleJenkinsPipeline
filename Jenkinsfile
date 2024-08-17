@@ -14,6 +14,14 @@ pipeline {
                 }
             }
         }
+        stage('Verify Inventory') {
+            steps {
+                script {
+                    sh 'cat inventory'
+                }
+            }
+        }
+
         stage('Install Packages') {
             when {
                 anyOf {
