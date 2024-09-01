@@ -20,6 +20,27 @@ pipeline {
                 }
             }
         }
+        stage('Prepare Ansible Config') {
+            steps {
+                writeFile file: 'ansible.cfg', text: '''
+                [defaults]
+                inventory = inventory
+                host_key_checking = False
+                timeout = 60
+
+                [privilege_escalation]
+                become = true
+                become_method = sudo
+                become_user = root
+                become_ask_pass = false
+
+                [ssh_connection]
+                ssh_args = -o ControlMaster=auto -o ControlPersist=60s
+                scp_if_ssh = True
+                pipelining = True
+                '''
+            }
+        }
 
         stage('Install Packages') {
             when {
