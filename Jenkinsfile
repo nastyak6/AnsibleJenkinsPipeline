@@ -20,25 +20,13 @@ pipeline {
                 }
             }
         }
-        stage('Prepare Ansible Config') {
+        stage('Install sshpass') {
             steps {
-                writeFile file: 'ansible.cfg', text: '''
-                [defaults]
-                inventory = inventory
-                host_key_checking = False
-                timeout = 60
-
-                [privilege_escalation]
-                become = true
-                become_method = sudo
-                become_user = root
-                become_ask_pass = false
-
-                [ssh_connection]
-                ssh_args = -o ControlMaster=auto -o ControlPersist=60s
-                scp_if_ssh = True
-                pipelining = True
-                '''
+                script {
+                    if (sh(script: "command -v sshpass", returnStatus: true) != 0) {
+                        sh "sudo apt-get update && sudo apt-get install sshpass -y"
+                    }
+                }
             }
         }
 
